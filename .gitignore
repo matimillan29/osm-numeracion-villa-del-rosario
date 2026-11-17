@@ -1,0 +1,5 @@
+osm.json
+pdf_*.json
+lineas.json
+*.pdf
+__pycache__/
