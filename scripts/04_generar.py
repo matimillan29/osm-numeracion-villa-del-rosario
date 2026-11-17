@@ -128,6 +128,25 @@ for l in lineas:
     q = a_mapa(a_xy(*mid))
     if q[1] > float(np.interp(q[0], xs, ys)) - 4: fuera['sur de la avenida'] += 1; continue
     quedan.append(l)
+# Conflictos con direcciones ya cargadas en OSM: si a menos de 15 m de una línea hay
+# una dirección real de la misma calle cuyo número no entra en el rango de la línea o
+# no tiene su paridad, la línea no se carga (prima lo relevado en el terreno).
+reales = []
+for e in d:
+    t = e.get('tags', {}); hn = t.get('addr:housenumber', ''); st = t.get('addr:street')
+    if not hn.isdigit() or not st: continue
+    if e['type'] == 'node' and e['id'] not in set(n for w in W.values() if 'addr:interpolation' in w.get('tags', {}) for n in w['nodes']): p = Point(xy_nodo(N, e['id']))
+    elif e['type'] == 'way' and len(e['nodes']) > 2 and all(n in N for n in e['nodes']): p = Polygon([xy_nodo(N, n) for n in e['nodes']]).centroid
+    else: continue
+    reales.append((st, int(hn), p))
+sin_conflicto = []
+for l in quedan:
+    g = LineString([a_xy(*c) for c in l['coords']])
+    malas = [(st, n) for st, n, p in reales if st == l['street'] and g.distance(p) < 15 and 0 < g.project(p) < g.length
+             and not (l['from'] <= n <= l['to'] and n % 2 == (0 if l['parity'] == 'even' else 1))]
+    if malas: fuera['conflicto con dirección existente'] += 1; print('   conflicto:', l['street'], l['parity'], l['from'], l['to'], malas); continue
+    sin_conflicto.append(l)
+quedan = sin_conflicto
 json.dump(quedan, open('lineas.json', 'w'), ensure_ascii=False)
-print('generadas', len(lineas), 'descartes', dict(descartes)); print('zonas excluidas', dict(fuera))
+print('generadas', len(lineas), 'descartes', dict(descartes)); print('excluidas', dict(fuera))
 print('líneas finales', len(quedan), 'calles', len({l["street"] for l in quedan}))

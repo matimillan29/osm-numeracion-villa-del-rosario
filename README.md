@@ -20,10 +20,9 @@ Los datos se regeneran contra OSM actual inmediatamente antes de cada subida, as
 
 | Elemento | Etiqueta | Valor |
 |---|---|---|
-| Vía | `addr:interpolation` | `even` (pares) u `odd` (impares) |
-| Vía | `addr:street` | nombre de la calle tal como está en OSM |
+| Vía | `addr:interpolation` | `even` (pares) u `odd` (impares); la vía no lleva otras etiquetas `addr:*` |
 | Nodo inicial y final | `addr:housenumber` | altura del extremo |
-| Nodo inicial y final | `addr:street` | nombre de la calle tal como está en OSM |
+| Nodo inicial y final | `addr:street` | valor exacto de `name` de la calle en OSM (lo toma el script de la calle misma) |
 | Changeset | `source` | `Coovilros Mapa Urbano 2026` |
 | Changeset | `import` | `yes` |
 
@@ -39,14 +38,15 @@ Requiere Python 3 con `pymupdf`, `shapely` y `numpy` (por ejemplo con `uv run --
 2. `python 01_extraer_pdf.py MapaUrbano.pdf` — extrae textos y manzanas del PDF.
 3. `python 02_georreferenciar.py` — ajusta una semejanza entre los nombres de calles del mapa y las calles de OSM (refinada por ICP).
 4. `python 03_bandas.py` — lee las marcas de altura del margen del mapa.
-5. `python 04_generar.py` — genera una línea por cuadra y por lado, a 6 m de la calle de OSM: pares a la derecha en el sentido en que crecen las alturas. Omite cuadras sin manzana de ese lado, canteros centrales, tramos que ya tienen numeración en OSM, calles en diagonal y las zonas excluidas.
+5. `python 04_generar.py` — genera una línea por cuadra y por lado, a 6 m de la calle de OSM: pares a la derecha en el sentido en que crecen las alturas. Omite cuadras sin manzana de ese lado, canteros centrales, tramos que ya tienen numeración en OSM, calles en diagonal y las zonas excluidas. Si a menos de 15 m de una línea hay una dirección ya cargada en OSM de la misma calle cuyo número no entra en el rango de la línea o no tiene su paridad, la línea no se genera: prima lo relevado en el terreno y no se modifica ninguna dirección existente.
 6. `python 05_control.py` — controles: cruces con calles y comparación contra direcciones ya cargadas en OSM.
 7. `python 06_exportar.py` — exporta GeoJSON y .osm.
 
-## Resultado de los controles (16/11/2026)
+## Resultado de los controles (17/11/2026)
 
-- 1013 líneas en 112 calles; ninguna toca o cruza una calle.
-- Direcciones reales ya cargadas en OSM: 28 de 31 caen en la centena que da el mapa; el lado par/impar coincide en 24 de 31.
+- 1010 líneas en 112 calles; ninguna toca o cruza una calle.
+- 3 líneas omitidas por conflicto con direcciones existentes (La Rioja 652, Córdoba 851, Monseñor Lindor Ferreyra 905).
+- Direcciones reales ya cargadas en OSM: 28 de 31 caen en la centena que da el mapa; el lado par/impar coincide en 24 de 31. Las que no coinciden no están junto a ninguna línea generada o quedaron cubiertas por la regla de conflictos.
 
 ## Licencia
 
